@@ -45,9 +45,8 @@ class TestModelLoading(unittest.TestCase):
         )
 
         cls.new_model_uri = (
-            f"models:/{cls.new_model_name}/"
-            f"{cls.new_model_version}"
-        )
+    f"models:/{cls.new_model_name}@staging"
+)
 
         cls.new_model = mlflow.pyfunc.load_model(
             cls.new_model_uri
@@ -63,37 +62,23 @@ class TestModelLoading(unittest.TestCase):
         )
 
     @staticmethod
-    def get_latest_model_version(
-        model_name,
-        stage="Staging"
-    ):
+def get_latest_model_version(model_name, alias="staging"):
 
-        client = mlflow.tracking.MlflowClient()
+    client = mlflow.tracking.MlflowClient()
 
-        # Fetch all registered model versions
-        versions = client.search_model_versions(
-            f"name='{model_name}'"
+    try:
+        model_version = client.get_model_version_by_alias(
+            name=model_name,
+            alias=alias
         )
 
-        # Filter versions belonging to Staging
-        staged_versions = [
-            version for version in versions
-            if version.current_stage == stage
-        ]
+        return model_version.version
 
-        if not staged_versions:
-            raise ValueError(
-                f"No model version found for {model_name} "
-                f"in {stage} stage. Please register the model first."
-            )
-
-        # Get the latest version
-        latest_version = max(
-            staged_versions,
-            key=lambda version: int(version.version)
-        )
-
-        return latest_version.version
+    except Exception as e:
+        raise ValueError(
+            f"Unable to find model {model_name} "
+            f"with alias {alias}"
+        ) from e
 
     def test_model_loaded_properly(self):
         self.assertIsNotNone(self.new_model)

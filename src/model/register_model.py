@@ -67,8 +67,9 @@ def load_model_info(file_path: str) -> dict:
         raise
 
 
+
 def register_model(model_name: str, model_info: dict):
-    """Register the model to the MLflow Model Registry."""
+    """Register model and assign staging alias."""
 
     try:
         model_uri = (
@@ -76,9 +77,7 @@ def register_model(model_name: str, model_info: dict):
             f"{model_info['model_path']}"
         )
 
-        logger.info("Registering model from URI: %s", model_uri)
-
-        # Register the model
+        # Register model
         model_version = mlflow.register_model(
             model_uri,
             model_name
@@ -89,39 +88,31 @@ def register_model(model_name: str, model_info: dict):
             model_version.version
         )
 
-        # Transition model to Staging
+        # Assign staging alias
         client = mlflow.tracking.MlflowClient()
 
-        client.transition_model_version_stage(
+        client.set_registered_model_alias(
             name=model_name,
-            version=model_version.version,
-            stage="Staging"
+            alias="staging",
+            version=model_version.version
         )
 
-        # Verify model registration and stage
-        versions = client.search_model_versions(
-            f"name='{model_name}'"
+        # Verify alias assignment
+        aliased_version = client.get_model_version_by_alias(
+            name=model_name,
+            alias="staging"
         )
-
-        staged_versions = [
-            version for version in versions
-            if version.current_stage == "Staging"
-        ]
-
-        if not staged_versions:
-            raise RuntimeError(
-                f"Model {model_name} was not found in Staging"
-            )
 
         logger.info(
-            "Model %s version %s successfully moved to Staging",
+            "Model %s version %s assigned staging alias",
             model_name,
-            model_version.version
+            aliased_version.version
         )
 
     except Exception:
         logger.exception("Error during model registration")
         raise
+
 
 
 def main():
