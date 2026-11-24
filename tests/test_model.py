@@ -3,13 +3,14 @@ import unittest
 import mlflow
 import os
 import pandas as pd
+import pickle
+
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
     recall_score,
     f1_score
 )
-import pickle
 
 
 class TestModelLoading(unittest.TestCase):
@@ -45,8 +46,8 @@ class TestModelLoading(unittest.TestCase):
         )
 
         cls.new_model_uri = (
-    f"models:/{cls.new_model_name}@staging"
-)
+            f"models:/{cls.new_model_name}@staging"
+        )
 
         cls.new_model = mlflow.pyfunc.load_model(
             cls.new_model_uri
@@ -62,23 +63,23 @@ class TestModelLoading(unittest.TestCase):
         )
 
     @staticmethod
-def get_latest_model_version(model_name, alias="staging"):
+    def get_latest_model_version(model_name, alias="staging"):
 
-    client = mlflow.tracking.MlflowClient()
+        client = mlflow.tracking.MlflowClient()
 
-    try:
-        model_version = client.get_model_version_by_alias(
-            name=model_name,
-            alias=alias
-        )
+        try:
+            model_version = client.get_model_version_by_alias(
+                name=model_name,
+                alias=alias
+            )
 
-        return model_version.version
+            return model_version.version
 
-    except Exception as e:
-        raise ValueError(
-            f"Unable to find model {model_name} "
-            f"with alias {alias}"
-        ) from e
+        except Exception as e:
+            raise ValueError(
+                f"Unable to find model {model_name} "
+                f"with alias {alias}"
+            ) from e
 
     def test_model_loaded_properly(self):
         self.assertIsNotNone(self.new_model)
